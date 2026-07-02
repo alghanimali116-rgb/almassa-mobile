@@ -1764,7 +1764,18 @@
                     var extraCss = '#print-body-wrap, .sheet-overlay, .sheet { padding: 0 !important; margin: 0 !important; width: 100% !important; }' +
                         '#barcode-label-content { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; padding: 1mm !important; }' +
                         '#barcode-label-svg { width: 100% !important; height: auto !important; }';
-                    withPrintPageSize(size.w + ' ' + size.h, function() { window.print(); }, extraCss);
+
+                    // "80mm auto" ليست قيمة CSS صحيحة لخاصية @page size (لا يمكن دمج قياس ثابت مع
+                    // الكلمة auto)، فيتجاهل المتصفح الحجم المخصص بالكامل ويطبع على مقاس الصفحة
+                    // الافتراضي (A4/Letter عمودي) — وهذا هو سبب ظهور الملصق "طويلاً" عند الطباعة.
+                    // الحل: نحسب الارتفاع الفعلي للملصق بالمليمتر من حجمه المعروض ونستخدمه بدل auto.
+                    var heightCss = size.h;
+                    if (heightCss === 'auto' && content) {
+                        var pxHeight = content.getBoundingClientRect().height;
+                        var mmHeight = Math.ceil((pxHeight / 96) * 25.4) + 4; // + هامش أمان بسيط
+                        heightCss = mmHeight + 'mm';
+                    }
+                    withPrintPageSize(size.w + ' ' + heightCss, function() { window.print(); }, extraCss);
                 };
             }
 
